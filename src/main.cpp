@@ -1,0 +1,160 @@
+#include <Arduino.h>
+#ifdef ESP32
+  #include <WiFi.h>
+  #include <AsyncTCP.h>
+#else
+  #include <ESP8266WiFi.h>
+  #include <ESPAsyncTCP.h>
+#endif
+#include <ESPAsyncWebServer.h>
+
+AsyncWebServer server(80);
+
+const char* ssid = "1283-NET";
+const char* password = "meus2229";
+
+const char* input_parameter1 = "input_string";
+const char* input_parameter2 = "input_integer";
+const char* input_parameter3 = "input_float";
+
+const char index_html[] PROGMEM = R"rawliteral(
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body{
+    margin: 0;
+    padding: 0;
+    background-color: #171F30;
+  }
+
+ 
+  main img{
+    height: 40px;
+    width: 70px;
+    margin-left: 250px;
+    margin-top: 10px;
+  }
+
+  main{
+    width: 280px;
+  }
+
+  main .color{
+    text-align: center;
+    font-size: large;
+    color: white;
+    margin-top: 10px;
+  }
+
+  .button {
+  border: 1px solid white;;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 20px;
+  cursor: pointer;
+}
+
+.button:hover{
+  -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+-moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+}
+
+
+.button1 {
+  background-color: #171F30;
+}
+
+.button2 {
+  background-color: #171F30;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+</head>
+<body>
+  
+<script>
+var colorPicker = new iro.ColorPicker(".colorPicker", {
+  width: 280,
+  color: "rgb(255, 0, 0)",
+  borderWidth: 1,
+  borderColor: "#171F30",
+});
+
+
+colorPicker.on('color:change', function(color) {
+  // if the first color changed
+  if (color.index === 0) {
+    console.log('color 0 changed!');
+    // log the color index and hex value
+    document.querySelector(".color").innerHTML = color.rgbString;
+    const query = new XMLHttpRequest();
+    query.open("GET","/color" + color.rgbString);
+    query.send();
+    var color = color.rgbString;
+    
+    console.log(color.index, color.rgbString);
+  }
+});
+
+</script>
+
+<header>
+  </header>
+
+
+  <main>
+    <div class="img">
+      <a href="https://github.com/arcziosppl"><img src="https://logos-world.net/wp-content/uploads/2020/11/GitHub-Logo.png"></a>
+      </div> 
+
+<div class="colorPicker">
+  </div>
+
+  <div class="color">
+    </div>
+
+    <div class="buttons">
+      <button class="button button1">ON</button>
+      <button class="button button2">OFF</button>
+    </div>
+    </main>
+  </body>
+</html>
+)rawliteral";
+
+void notFound(AsyncWebServerRequest *request) {
+  request->send(404, "text/plain", "Not found");
+}
+
+void setup() {
+  Serial.begin(9600);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Connecting...");
+    return;
+  }
+  Serial.println();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", index_html);
+  });
+
+  
+  server.onNotFound(notFound);
+  server.begin();
+}
+
+void loop() {
+  
+}

@@ -1,0 +1,146 @@
+#include <Arduino.h>
+#ifdef ESP32
+  #include <WiFi.h>
+  #include <AsyncTCP.h>
+#else
+  #include <ESP8266WiFi.h>
+  #include <ESPAsyncTCP.h>
+#endif
+#include <ESPAsyncWebServer.h>
+
+AsyncWebServer server(80);
+
+const char* ssid = "1283-NET";
+const char* password = "meus2229";
+
+const char* PARAM_INPUT = "color";
+String color;
+
+
+const char index_html[] PROGMEM = R"rawliteral(
+  <html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body{
+    margin: 0;
+    padding: 0;
+    background-color: #171F30;
+  }
+
+  main .colorPicker{
+    margin: 50px;
+  }
+
+  main img{
+    height: 40px;
+    width: 70px;
+    margin-left: 300px;
+    margin-top: 10px;
+  }
+
+  main{
+    width: 280px;
+  }
+
+  main .color{
+    text-align: center;
+    font-size: large;
+    color: white;
+    padding-left: 80px;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+</head>
+<body>
+  
+<script>
+var colorPicker = new iro.ColorPicker(".colorPicker", {
+  width: 280,
+  color: "rgb(255, 0, 0)",
+  borderWidth: 1,
+  borderColor: "#171F30",
+});
+
+
+colorPicker.on('color:change', function(color) {
+  // if the first color changed
+  if (color.index === 0) {
+    console.log('color 0 changed!');
+    // log the color index and hex value
+    document.querySelector(".color").innerHTML = color.rgbString;
+    const query = new XMLHttpRequest();
+    query.open("GET","/color" + color.rgbString);
+    query.send();
+    var color = color.rgbString;
+
+    console.log(color.index, color.rgbString);
+  }
+});
+
+</script>
+
+<header>
+  </header>
+
+
+  <main>
+    <div class="img">
+      <a href="https://github.com/arcziosppl"><img src="https://www.google.com/search?q=github+logo+png&sxsrf=ALiCzsaEPm3F4Y_17QZq6Ai4po7sqPhERw:1664122083756&source=lnms&tbm=isch&sa=X&ved=2ahUKEwix26jtqbD6AhUY6CoKHYo6AOQQ_AUoAXoECAIQAw&biw=1920&bih=929&dpr=1#imgrc=8AE_J5pAtu3iiM"></a>
+      </div> 
+
+<div class="colorPicker">
+  </div>
+
+  <div class="color">
+    </div>
+    </main>
+  </body>
+</html>
+)rawliteral";
+
+void notFound(AsyncWebServerRequest *request) {
+  request->send(404, "text/plain", "Not found");
+}
+
+void setup() {
+  Serial.begin(9600);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Connecting...");
+    return;
+  }
+  Serial.println();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // Route for root / web page
+server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  request->send_P(200, "text/html", index_html);
+});
+
+// Send a GET request to <ESP_IP>/slider?value=<inputMessage>
+server.on("/color", HTTP_GET, [] (AsyncWebServerRequest *request) {
+  String inputMessage;
+  // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+  if (request->hasParam(PARAM_INPUT)) {
+    inputMessage = request->getParam(PARAM_INPUT)->value();
+    color = inputMessage;
+    
+  }
+  else {
+    inputMessage = "No message sent";
+  }
+  Serial.println(inputMessage);
+  request->send(200, "text/plain", "OK");
+});
+
+
+}
+
+void loop() {
+  
+}
