@@ -11,7 +11,7 @@
 AsyncWebServer server(80);
 
 const char* ssid = "1283-NET";
-const char* password = "meus2229";
+const char* password = "*****";
 
 const char* input_parameter1 = "input_string";
 const char* input_parameter2 = "input_integer";
