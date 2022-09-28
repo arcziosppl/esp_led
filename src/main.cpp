@@ -7,15 +7,38 @@
   #include <ESPAsyncTCP.h>
 #endif
 #include <ESPAsyncWebServer.h>
+#include <Adafruit_NeoPixel.h>
+
+#define PIN        2
+#define NUMPIXELS 18
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+#define DELAYVAL 200
 
 AsyncWebServer server(80);
 
 const char* ssid = "1283-NET";
-const char* password = "*****";
+const char* password = "meus2229";
 
-const char* input_parameter1 = "input_string";
-const char* input_parameter2 = "input_integer";
-const char* input_parameter3 = "input_float";
+String color;
+String header;
+
+void rainbow(int wait) {
+  for(long firstPixelHue = 0; firstPixelHue < 3*65536; firstPixelHue += 256) {
+    for(int i=0; i<pixels.numPixels(); i++) { // For each pixel in strip...
+      int pixelHue = firstPixelHue + (i * 65536L / pixels.numPixels());
+      pixels.setPixelColor(i, pixels.gamma32(pixels.ColorHSV(pixelHue)));
+    }
+    pixels.show(); 
+    delay(wait);  
+  }
+}
+
+void off_led(){
+pixels.clear();
+pixels.setPixelColor(NUMPIXELS, pixels.Color(0, 255, 0));
+    pixels.show();
+}
 
 const char index_html[] PROGMEM = R"rawliteral(
 <html>
@@ -40,6 +63,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
   main{
     width: 280px;
+    margin-left: 20px;
   }
 
   main .color{
@@ -61,55 +85,42 @@ const char index_html[] PROGMEM = R"rawliteral(
   cursor: pointer;
 }
 
+.button3{
+  border: 1px solid white;;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 20px;
+  cursor: pointer;
+  width: 230px;
+}
+
 .button:hover{
   -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 -moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 }
 
-
-.button1 {
-  background-color: #171F30;
+.button3:hover{
+  -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+-moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 }
 
-.button2 {
+.button1, .button2, .button3 {
   background-color: #171F30;
+  border-radius: 10px;
 }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+<script src="https://requirejs.org/docs/release/2.3.5/minified/require.js"></script>
 </head>
 <body>
   
-<script>
-var colorPicker = new iro.ColorPicker(".colorPicker", {
-  width: 280,
-  color: "rgb(255, 0, 0)",
-  borderWidth: 1,
-  borderColor: "#171F30",
-});
-
-
-colorPicker.on('color:change', function(color) {
-  // if the first color changed
-  if (color.index === 0) {
-    console.log('color 0 changed!');
-    // log the color index and hex value
-    document.querySelector(".color").innerHTML = color.rgbString;
-    const query = new XMLHttpRequest();
-    query.open("GET","/color" + color.rgbString);
-    query.send();
-    var color = color.rgbString;
-    
-    console.log(color.index, color.rgbString);
-  }
-});
-
-</script>
-
-<header>
-  </header>
-
-
   <main>
     <div class="img">
       <a href="https://github.com/arcziosppl"><img src="https://logos-world.net/wp-content/uploads/2020/11/GitHub-Logo.png"></a>
@@ -124,8 +135,57 @@ colorPicker.on('color:change', function(color) {
     <div class="buttons">
       <button class="button button1">ON</button>
       <button class="button button2">OFF</button>
+      <button class="button3">SET</button>
     </div>
     </main>
+
+
+    <script>
+
+
+      var colorPicker = new iro.ColorPicker(".colorPicker", {
+        width: 280,
+        color: "rgb(255, 0, 0)",
+        borderWidth: 1,
+        borderColor: "#171F30",
+      });
+      
+      
+      colorPicker.on('color:change', function(color) {
+        // if the first color changed
+        if (color.index === 0) {
+          console.log('color 0 changed!');
+          // log the color index and hex value
+          document.querySelector(".color").innerHTML = "Color: " + color.hexString;
+        }
+      
+      
+        var btn_set = document.querySelector(".button3");
+      
+        btn_set.addEventListener('click', function(){
+          console.log(color.hexString);
+        });
+    
+      });
+
+      var btn_on = document.querySelector(".button1");
+        var btn_off = document.querySelector(".button2");
+
+      btn_on.addEventListener('click', function(){
+              const zapytanie = new XMLHttpRequest();              
+              zapytanie.open("GET", "/on");
+              zapytanie.send();                               
+        });
+      
+        btn_off.addEventListener('click', function(){
+          const zapytanie = new XMLHttpRequest();             
+              zapytanie.open("GET", "/off");
+              zapytanie.send();
+        });
+      
+      
+      </script>
+
   </body>
 </html>
 )rawliteral";
@@ -136,6 +196,8 @@ void notFound(AsyncWebServerRequest *request) {
 
 void setup() {
   Serial.begin(9600);
+  pixels.begin();
+  off_led();
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -148,6 +210,16 @@ void setup() {
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html);
+  });
+
+  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    rainbow(200);                                  
+    request->send(200);                                         
+  });
+
+  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    off_led(); 
+request->send(200);
   });
 
   
