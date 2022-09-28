@@ -18,7 +18,7 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 AsyncWebServer server(80);
 
 const char* ssid = "1283-NET";
-const char* password = "meus2229";
+const char* password = "************";
 
 String color;
 String header;
