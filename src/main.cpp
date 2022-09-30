@@ -8,24 +8,24 @@
 #endif
 #include <ESPAsyncWebServer.h>
 #include <Adafruit_NeoPixel.h>
-#include <ArduinoJSON.h>
 
 
 #define PIN        2
 #define NUMPIXELS 18
 
-Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_RGB + NEO_KHZ800);
 #define DELAYVAL 200
 
 AsyncWebServer server(80);
 
 const char* ssid = "1283-NET";
-const char* password = "*******";
+const char* password = "*********";
 
 
 void rainbow(int wait) {
+  pixels.clear();
   for(long firstPixelHue = 0; firstPixelHue < 3*65536; firstPixelHue += 256) {
-    for(int i=0; i<pixels.numPixels(); i++) { // For each pixel in strip...
+    for(int i=0; i<pixels.numPixels(); i++) { 
       int pixelHue = firstPixelHue + (i * 65536L / pixels.numPixels());
       pixels.setPixelColor(i, pixels.gamma32(pixels.ColorHSV(pixelHue)));
     }
@@ -36,8 +36,24 @@ void rainbow(int wait) {
 
 void off_led(){
 pixels.clear();
-pixels.setPixelColor(NUMPIXELS, pixels.Color(0, 255, 0));
+pixels.setPixelColor(NUMPIXELS, pixels.Color(0,0,0));
     pixels.show();
+}
+
+void change_color(uint8_t r,uint8_t g, uint8_t b){
+ for(int i=0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color( g, r, b ) );
+  }
+
+  pixels.show();
+}
+
+void on_led(uint8_t g,uint8_t r, uint8_t b){
+ for(int i=0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(g,r,b) );
+  }
+
+  pixels.show();
 }
 
 
@@ -136,7 +152,7 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
     <div class="buttons">
       <button class="button button1">ON</button>
       <button class="button button2">OFF</button>
-      <button class="button3">SET</button>
+      <button class="button3">RAINBOW</button>
     </div>
     </main>
 
@@ -158,23 +174,17 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
           console.log('color 0 changed!');
           // log the color index and hex value
           document.querySelector(".color").innerHTML = "Color: " + color.rgbString;
+          console.log(color.rgbString);
+           const zapytanie = new XMLHttpRequest();              
+              zapytanie.open("GET", "/update?value=" + color.red + "&value2=" + color.green + "&value3=" + color.blue);
+              zapytanie.send(); 
         }
       
-      
-        var btn_set = document.querySelector(".button3");
-      
-        btn_set.addEventListener('click', function(){
-          console.log(color.rgbString);
-           var tab = [color.red,color.green];
-           const zapytanie = new XMLHttpRequest();              
-              zapytanie.open("GET", "/update?value=" + color.red + "&value2=" + color.green + "&value3=" + color.blue, true);
-              zapytanie.send(); 
-        });
-    
       });
 
       var btn_on = document.querySelector(".button1");
         var btn_off = document.querySelector(".button2");
+        var btn_set = document.querySelector(".button3");
 
       btn_on.addEventListener('click', function(){
               const zapytanie = new XMLHttpRequest();              
@@ -185,6 +195,12 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
         btn_off.addEventListener('click', function(){
           const zapytanie = new XMLHttpRequest();             
               zapytanie.open("GET", "/off");
+              zapytanie.send();
+        });
+
+        btn_set.addEventListener('click', function(){
+          const zapytanie = new XMLHttpRequest();             
+              zapytanie.open("GET", "/rainbow");
               zapytanie.send();
         });
       
@@ -218,12 +234,17 @@ void setup() {
   });
 
   server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){ 
-    rainbow(200);                                  
+    on_led(0,255,0);                                  
     request->send(200);                                         
   });
 
   server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){ 
     off_led(); 
+request->send(200);
+  });
+
+  server.on("/rainbow", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    rainbow(200); 
 request->send(200);
   });
 
@@ -236,11 +257,10 @@ server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
     inputMessage = request->getParam("value")->value();
     inputMessage2 = request->getParam("value2")->value();
     inputMessage3 = request->getParam("value3")->value();
-    }
-    Serial.println(inputMessage);
-    Serial.println(inputMessage2);
-    Serial.println(inputMessage3);
 
+    change_color(inputMessage.toInt(),inputMessage2.toInt(),inputMessage3.toInt());
+    }
+  
 
     request->send(200);
   });
