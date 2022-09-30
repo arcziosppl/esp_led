@@ -8,6 +8,8 @@
 #endif
 #include <ESPAsyncWebServer.h>
 #include <Adafruit_NeoPixel.h>
+#include <ArduinoJSON.h>
+
 
 #define PIN        2
 #define NUMPIXELS 18
@@ -18,7 +20,7 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 AsyncWebServer server(80);
 
 const char* ssid = "1283-NET";
-const char* password = "meus2229";
+const char* password = "*******";
 
 
 void rainbow(int wait) {
@@ -37,6 +39,7 @@ pixels.clear();
 pixels.setPixelColor(NUMPIXELS, pixels.Color(0, 255, 0));
     pixels.show();
 }
+
 
 const char index_html[] PROGMEM = R"rawliteral(
 <html>
@@ -154,16 +157,17 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
         if (color.index === 0) {
           console.log('color 0 changed!');
           // log the color index and hex value
-          document.querySelector(".color").innerHTML = "Color: " + color.hexString;
+          document.querySelector(".color").innerHTML = "Color: " + color.rgbString;
         }
       
       
         var btn_set = document.querySelector(".button3");
       
         btn_set.addEventListener('click', function(){
-          console.log(color.hexString);
+          console.log(color.rgbString);
+           var tab = [color.red,color.green];
            const zapytanie = new XMLHttpRequest();              
-              zapytanie.open("GET", "/update?value=1");
+              zapytanie.open("GET", "/update?value=" + color.red + "&value2=" + color.green + "&value3=" + color.blue, true);
               zapytanie.send(); 
         });
     
@@ -225,15 +229,20 @@ request->send(200);
 
 server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
  String inputMessage;
-    String inputParam;
+  String inputMessage2;
+  String inputMessage3;
     if(request->hasParam("value"))
     {
     inputMessage = request->getParam("value")->value();
+    inputMessage2 = request->getParam("value2")->value();
+    inputMessage3 = request->getParam("value3")->value();
     }
-    Serial.print(inputMessage);
-   
- 
-    request->send(200, "text/plain", "message received");
+    Serial.println(inputMessage);
+    Serial.println(inputMessage2);
+    Serial.println(inputMessage3);
+
+
+    request->send(200);
   });
 
 
