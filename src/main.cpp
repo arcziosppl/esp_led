@@ -18,10 +18,8 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 AsyncWebServer server(80);
 
 const char* ssid = "1283-NET";
-const char* password = "************";
+const char* password = "meus2229";
 
-String color;
-String header;
 
 void rainbow(int wait) {
   for(long firstPixelHue = 0; firstPixelHue < 3*65536; firstPixelHue += 256) {
@@ -164,6 +162,9 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
       
         btn_set.addEventListener('click', function(){
           console.log(color.hexString);
+           const zapytanie = new XMLHttpRequest();              
+              zapytanie.open("GET", "/update?value=1");
+              zapytanie.send(); 
         });
     
       });
@@ -221,6 +222,20 @@ void setup() {
     off_led(); 
 request->send(200);
   });
+
+server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+ String inputMessage;
+    String inputParam;
+    if(request->hasParam("value"))
+    {
+    inputMessage = request->getParam("value")->value();
+    }
+    Serial.print(inputMessage);
+   
+ 
+    request->send(200, "text/plain", "message received");
+  });
+
 
   
   server.onNotFound(notFound);
