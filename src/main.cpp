@@ -8,18 +8,89 @@
 #endif
 #include <ESPAsyncWebServer.h>
 #include <Adafruit_NeoPixel.h>
+#include "SinricPro.h"
+#include "SinricProLight.h"
 
 
 #define PIN        2
 #define NUMPIXELS 18
 
-Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 #define DELAYVAL 200
 
 AsyncWebServer server(80);
 
 const char* ssid = "1283-NET";
-const char* password = "*********";
+const char* password = "meus2229";
+#define APP_KEY           "739227c6-59df-405f-b500-c704b024cd71"      
+#define APP_SECRET        "5c7eadd4-8683-4b4a-86da-80e8d02e60cc-018ba993-2b88-4d80-a21c-72ce010072c0"   
+#define LIGHT_ID          "63386d33134b2df11cc028d5"
+
+bool powerState;
+
+class save_color
+{
+public:
+
+uint8_t color_red;
+uint8_t color_green;
+uint8_t color_blue;
+
+void s_color(uint8_t red, uint8_t green, uint8_t blue)
+{
+color_red = red;
+color_green =green;
+color_blue = blue;
+}
+
+int red()
+{
+  return color_red;
+}
+
+int green()
+{
+  return color_green;
+}
+
+int blue()
+{
+  return color_blue;
+}
+
+
+};
+
+save_color save_color_obj;
+
+bool onPowerState(const String &deviceId, bool &state) {
+  powerState = state;
+  if (state) {
+    pixels.clear();
+    for(int i=0; i<NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(save_color_obj.green(),save_color_obj.red(),save_color_obj.blue()));
+    }
+  } else {
+    pixels.clear();
+    pixels.setPixelColor(NUMPIXELS, pixels.Color(0,0,0));
+  }
+  pixels.show();
+  return true; // request handled properly
+}
+
+void setupSinricPro() {
+  // get a new Light device from SinricPro
+  SinricProLight &myLight = SinricPro[LIGHT_ID];
+
+  // set callback function to device
+  myLight.onPowerState(onPowerState);
+  
+  // setup SinricPro
+  SinricPro.onConnected([](){ Serial.printf("Connected to SinricPro\r\n"); }); 
+  SinricPro.onDisconnected([](){ Serial.printf("Disconnected from SinricPro\r\n"); });
+  //SinricPro.restoreDeviceStates(true); // Uncomment to restore the last known state from the server.
+  SinricPro.begin(APP_KEY, APP_SECRET);
+}
 
 
 void rainbow(int wait) {
@@ -42,18 +113,41 @@ pixels.setPixelColor(NUMPIXELS, pixels.Color(0,0,0));
 
 void change_color(uint8_t r,uint8_t g, uint8_t b){
  for(int i=0; i < NUMPIXELS; i++) {
-    pixels.setPixelColor(i, pixels.Color( g, r, b ) );
+    pixels.setPixelColor(i, pixels.Color( r, g, b ) );
   }
 
   pixels.show();
 }
 
-void on_led(uint8_t g,uint8_t r, uint8_t b){
- for(int i=0; i < NUMPIXELS; i++) {
-    pixels.setPixelColor(i, pixels.Color(g,r,b) );
-  }
+void on_led(){
+  uint8_t r = save_color_obj.red();
+    uint8_t g = save_color_obj.green();
+  uint8_t b = save_color_obj.blue();
 
+ for(int i=0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(r,g,b) );
+  }
   pixels.show();
+}
+
+void FadeInOut(byte red, byte green, byte blue){
+  float r, g, b;
+     
+  for(int k = 0; k < 256; k=k+1) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    pixels.setPixelColor(k,pixels.Color(r,g,b));
+    pixels.show();
+  }
+     
+  for(int k = 255; k >= 0; k=k-2) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    pixels.setPixelColor(k,pixels.Color(r,g,b));
+    pixels.show();
+  }
 }
 
 
@@ -64,26 +158,47 @@ const char index_html[] PROGMEM = R"rawliteral(
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  body{
+  html, body{
     margin: 0;
     padding: 0;
+    background-color: blue;
+    height: 100%;
+  }
+
+  .background{
+    position: fixed;
+    top:0px;
+    right:0px;
+    bottom:0px;
+    margin: 40px;
+    left:0px;
+    height: 90%;
     background-color: #171F30;
+    opacity: 1;
+    border-radius: 30px;
+
+
+    -webkit-box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
+-moz-box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
+box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
   }
 
  
-  main img{
+  .main img{
     height: 40px;
     width: 70px;
-    margin-left: 250px;
+    margin-left: 235px;
     margin-top: 10px;
   }
 
-  main{
+  .main{
     width: 280px;
-    margin-left: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  main .color{
+  .main .color{
     text-align: center;
     font-size: large;
     color: white;
@@ -102,7 +217,7 @@ const char index_html[] PROGMEM = R"rawliteral(
   cursor: pointer;
 }
 
-.button3{
+.button3, .button4{
   border: 1px solid white;;
   color: white;
   padding: 15px 32px;
@@ -127,7 +242,13 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 }
 
-.button1, .button2, .button3 {
+.button4:hover{
+  -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+-moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+}
+
+.button1, .button2, .button3, .button4 {
   background-color: #171F30;
   border-radius: 10px;
 }
@@ -138,7 +259,8 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 </head>
 <body>
   
-  <main>
+  <div class="background">
+  <div class="main">
     <div class="img">
       <a href="https://github.com/arcziosppl"><img src="https://logos-world.net/wp-content/uploads/2020/11/GitHub-Logo.png"></a>
       </div> 
@@ -153,8 +275,14 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
       <button class="button button1">ON</button>
       <button class="button button2">OFF</button>
       <button class="button3">RAINBOW</button>
+      <button class="button4">FADE</button>
     </div>
-    </main>
+    </div>
+  </div>
+
+
+
+
 
 
     <script>
@@ -169,10 +297,9 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
       
       
       colorPicker.on('color:change', function(color) {
-        // if the first color changed
         if (color.index === 0) {
           console.log('color 0 changed!');
-          // log the color index and hex value
+          document.body.style.backgroundColor =  color.rgbString;
           document.querySelector(".color").innerHTML = "Color: " + color.rgbString;
           console.log(color.rgbString);
            const zapytanie = new XMLHttpRequest();              
@@ -184,7 +311,8 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 
       var btn_on = document.querySelector(".button1");
         var btn_off = document.querySelector(".button2");
-        var btn_set = document.querySelector(".button3");
+        var btn_rainbow = document.querySelector(".button3");
+        var btn_fade = document.querySelector(".button4");
 
       btn_on.addEventListener('click', function(){
               const zapytanie = new XMLHttpRequest();              
@@ -198,9 +326,15 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
               zapytanie.send();
         });
 
-        btn_set.addEventListener('click', function(){
+        btn_rainbow.addEventListener('click', function(){
           const zapytanie = new XMLHttpRequest();             
               zapytanie.open("GET", "/rainbow");
+              zapytanie.send();
+        });
+
+        btn_fade.addEventListener('click', function(){
+          const zapytanie = new XMLHttpRequest();             
+              zapytanie.open("GET", "/fade");
               zapytanie.send();
         });
       
@@ -218,6 +352,7 @@ void notFound(AsyncWebServerRequest *request) {
 void setup() {
   Serial.begin(9600);
   pixels.begin();
+  setupSinricPro();
   off_led();
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -234,7 +369,7 @@ void setup() {
   });
 
   server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){ 
-    on_led(0,255,0);                                  
+    on_led();                                  
     request->send(200);                                         
   });
 
@@ -248,6 +383,12 @@ request->send(200);
 request->send(200);
   });
 
+  server.on("/fade", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    FadeInOut(0xff, 0x77, 0x00);
+request->send(200);
+  });
+
+
 server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
  String inputMessage;
   String inputMessage2;
@@ -259,6 +400,7 @@ server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
     inputMessage3 = request->getParam("value3")->value();
 
     change_color(inputMessage.toInt(),inputMessage2.toInt(),inputMessage3.toInt());
+    save_color_obj.s_color(inputMessage.toInt(),inputMessage2.toInt(),inputMessage3.toInt());
     }
   
 
@@ -272,5 +414,5 @@ server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
 }
 
 void loop() {
-  
+  SinricPro.handle();
 }
