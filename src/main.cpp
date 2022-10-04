@@ -78,12 +78,24 @@ bool onPowerState(const String &deviceId, bool &state) {
   return true; // request handled properly
 }
 
+bool onColor(const String &deviceId, byte &r, byte &g, byte &b) {
+ pixels.clear();
+    for(int i=0; i<NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(r,g,b));
+    pixels.show();
+    }
+  return true;
+}
+
+
 void setupSinricPro() {
   // get a new Light device from SinricPro
   SinricProLight &myLight = SinricPro[LIGHT_ID];
 
   // set callback function to device
   myLight.onPowerState(onPowerState);
+  myLight.onColor(onColor);
+
   
   // setup SinricPro
   SinricPro.onConnected([](){ Serial.printf("Connected to SinricPro\r\n"); }); 
@@ -91,7 +103,6 @@ void setupSinricPro() {
   //SinricPro.restoreDeviceStates(true); // Uncomment to restore the last known state from the server.
   SinricPro.begin(APP_KEY, APP_SECRET);
 }
-
 
 void rainbow(int wait) {
   pixels.clear();
@@ -184,11 +195,11 @@ box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
   }
 
  
-  .main img{
+  .background img{
     height: 40px;
     width: 70px;
-    margin-left: 235px;
     margin-top: 10px;
+    float: right;
   }
 
   .main{
@@ -196,6 +207,7 @@ box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
     display: block;
     margin-left: auto;
     margin-right: auto;
+    margin-top: 25px;
   }
 
   .main .color{
@@ -260,10 +272,8 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 <body>
   
   <div class="background">
+    <a href="https://github.com/arcziosppl"><img src="https://logos-world.net/wp-content/uploads/2020/11/GitHub-Logo.png"></a>
   <div class="main">
-    <div class="img">
-      <a href="https://github.com/arcziosppl"><img src="https://logos-world.net/wp-content/uploads/2020/11/GitHub-Logo.png"></a>
-      </div> 
 
 <div class="colorPicker">
   </div>
