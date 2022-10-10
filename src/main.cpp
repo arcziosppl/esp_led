@@ -175,7 +175,6 @@ const char index_html[] PROGMEM = R"rawliteral(
     background-color: blue;
     height: 100%;
   }
-
   .background{
     position: fixed;
     top:0px;
@@ -187,13 +186,10 @@ const char index_html[] PROGMEM = R"rawliteral(
     background-color: #171F30;
     opacity: 1;
     border-radius: 30px;
-
-
     -webkit-box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
 -moz-box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
 box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
   }
-
  
   .background img{
     height: 40px;
@@ -201,7 +197,6 @@ box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
     margin-top: 10px;
     float: right;
   }
-
   .main{
     width: 280px;
     display: block;
@@ -209,14 +204,12 @@ box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
     margin-right: auto;
     margin-top: 25px;
   }
-
   .main .color{
     text-align: center;
     font-size: large;
     color: white;
     margin-top: 10px;
   }
-
   .button {
   border: 1px solid white;;
   color: white;
@@ -228,7 +221,6 @@ box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
   margin: 20px;
   cursor: pointer;
 }
-
 .button3, .button4{
   border: 1px solid white;;
   color: white;
@@ -241,63 +233,48 @@ box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
   cursor: pointer;
   width: 230px;
 }
-
 .button:hover{
   -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 -moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 }
-
 .button3:hover{
   -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 -moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 }
-
 .button4:hover{
   -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 -moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
 }
-
 .button1, .button2, .button3, .button4 {
   background-color: #171F30;
   border-radius: 10px;
 }
-
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
 <script src="https://requirejs.org/docs/release/2.3.5/minified/require.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body>
   
   <div class="background">
     <a href="https://github.com/arcziosppl"><img src="https://logos-world.net/wp-content/uploads/2020/11/GitHub-Logo.png"></a>
   <div class="main">
-
 <div class="colorPicker">
   </div>
-
   <div class="color">
     </div>
-
     <div class="buttons">
       <button class="button button1">ON</button>
       <button class="button button2">OFF</button>
       <button class="button3">RAINBOW</button>
-      <button class="button4">FADE</button>
+      <button class="button4">RANDOM</button>
     </div>
     </div>
   </div>
-
-
-
-
-
-
     <script>
-
-
       var colorPicker = new iro.ColorPicker(".colorPicker", {
         width: 280,
         color: "rgb(255, 0, 0)",
@@ -312,45 +289,65 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
           document.body.style.backgroundColor =  color.rgbString;
           document.querySelector(".color").innerHTML = "Color: " + color.rgbString;
           console.log(color.rgbString);
-           const zapytanie = new XMLHttpRequest();              
-              zapytanie.open("GET", "/update?value=" + color.red + "&value2=" + color.green + "&value3=" + color.blue);
-              zapytanie.send(); 
+           const request = new XMLHttpRequest();              
+              request.open("GET", "/update?value=" + color.red + "&value2=" + color.green + "&value3=" + color.blue);
+              request.send(); 
         }
       
       });
+      
 
       var btn_on = document.querySelector(".button1");
         var btn_off = document.querySelector(".button2");
         var btn_rainbow = document.querySelector(".button3");
         var btn_fade = document.querySelector(".button4");
 
+ 
       btn_on.addEventListener('click', function(){
-              const zapytanie = new XMLHttpRequest();              
-              zapytanie.open("GET", "/on");
-              zapytanie.send();                               
+              const request = new XMLHttpRequest();              
+              request.open("GET", "/on");
+              request.send();                               
         });
       
         btn_off.addEventListener('click', function(){
-          const zapytanie = new XMLHttpRequest();             
-              zapytanie.open("GET", "/off");
-              zapytanie.send();
+            const request = new XMLHttpRequest();              
+              request.open("GET", "/off");
+              request.send();
         });
-
         btn_rainbow.addEventListener('click', function(){
-          const zapytanie = new XMLHttpRequest();             
-              zapytanie.open("GET", "/rainbow");
-              zapytanie.send();
+            const request = new XMLHttpRequest();              
+              request.open("GET", "/rainbow");
+              request.send();
+        });
+        btn_fade.addEventListener('click', function(){
+            const request = new XMLHttpRequest();              
+              request.open("GET", "/random");
+              request.send();
         });
 
-        btn_fade.addEventListener('click', function(){
-          const zapytanie = new XMLHttpRequest();             
-              zapytanie.open("GET", "/fade");
-              zapytanie.send();
+
+
+        $(document).ready(function(){
+
+            $(".button1, .button2, .button3, .button4").mouseenter(function(){
+                $(this).css({"borderColor" : "rgb(255, 0, 89)"});
+                $(this).animate({
+                    height: '60px'
+                });
+            });
+
+            $(".button1, .button2, .button3, .button4").mouseleave(function(){
+                $(this).animate({
+                    height: '50px'
+                });
+                $(this).css({"borderColor" : "white"});
+            });
+
+
         });
       
       
       </script>
-
   </body>
 </html>
 )rawliteral";
