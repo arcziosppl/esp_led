@@ -20,11 +20,11 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 AsyncWebServer server(80);
 
-const char* ssid = "1283-NET";
-const char* password = "meus2229";
-#define APP_KEY           "739227c6-59df-405f-b500-c704b024cd71"      
-#define APP_SECRET        "5c7eadd4-8683-4b4a-86da-80e8d02e60cc-018ba993-2b88-4d80-a21c-72ce010072c0"   
-#define LIGHT_ID          "63386d33134b2df11cc028d5"
+const char* ssid = "esp";
+const char* password = "12345678";
+#define APP_KEY           "*******"      
+#define APP_SECRET        "********"   
+#define LIGHT_ID          "********"
 
 bool powerState;
 
@@ -62,6 +62,20 @@ int blue()
 };
 
 save_color save_color_obj;
+
+void random_color(){
+ 
+ uint8_t c_red = random(0,255);
+  uint8_t c_green = random(0,255);
+ uint8_t c_blue = random(0,255);
+
+ for(int i=0; i<NUMPIXELS; i++)
+ {
+pixels.setPixelColor(i, pixels.Color(c_red, c_green, c_blue));
+pixels.show();
+ }
+
+}
 
 bool onPowerState(const String &deviceId, bool &state) {
   powerState = state;
@@ -296,12 +310,10 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
       
       });
       
-
       var btn_on = document.querySelector(".button1");
         var btn_off = document.querySelector(".button2");
         var btn_rainbow = document.querySelector(".button3");
         var btn_fade = document.querySelector(".button4");
-
  
       btn_on.addEventListener('click', function(){
               const request = new XMLHttpRequest();              
@@ -324,26 +336,19 @@ box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
               request.open("GET", "/random");
               request.send();
         });
-
-
-
         $(document).ready(function(){
-
             $(".button1, .button2, .button3, .button4").mouseenter(function(){
                 $(this).css({"borderColor" : "rgb(255, 0, 89)"});
                 $(this).animate({
                     height: '60px'
                 });
             });
-
             $(".button1, .button2, .button3, .button4").mouseleave(function(){
                 $(this).animate({
                     height: '50px'
                 });
                 $(this).css({"borderColor" : "white"});
             });
-
-
         });
       
       
@@ -390,8 +395,8 @@ request->send(200);
 request->send(200);
   });
 
-  server.on("/fade", HTTP_GET, [](AsyncWebServerRequest *request){ 
-    FadeInOut(0xff, 0x77, 0x00);
+  server.on("/strobe", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    random_color();
 request->send(200);
   });
 
