@@ -22,9 +22,9 @@ AsyncWebServer server(80);
 
 const char* ssid = "esp";
 const char* password = "12345678";
-#define APP_KEY           "*******"      
-#define APP_SECRET        "********"   
-#define LIGHT_ID          "********"
+#define APP_KEY           "******"      
+#define APP_SECRET        "******"   
+#define LIGHT_ID          "******"
 
 bool powerState;
 
@@ -395,7 +395,7 @@ request->send(200);
 request->send(200);
   });
 
-  server.on("/strobe", HTTP_GET, [](AsyncWebServerRequest *request){ 
+  server.on("/random", HTTP_GET, [](AsyncWebServerRequest *request){ 
     random_color();
 request->send(200);
   });
