@@ -1,0 +1,422 @@
+#include <Arduino.h>
+#ifdef ESP32
+  #include <WiFi.h>
+  #include <AsyncTCP.h>
+#else
+  #include <ESP8266WiFi.h>
+  #include <ESPAsyncTCP.h>
+#endif
+#include <ESPAsyncWebServer.h>
+#include <Adafruit_NeoPixel.h>
+#include "SinricPro.h"
+#include "SinricProLight.h"
+#include "config.h"
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+#define DELAYVAL 200
+
+AsyncWebServer server(80);
+
+
+bool powerState;
+
+class save_color
+{
+public:
+
+uint8_t color_red;
+uint8_t color_green;
+uint8_t color_blue;
+
+void s_color(uint8_t red, uint8_t green, uint8_t blue)
+{
+color_red = red;
+color_green =green;
+color_blue = blue;
+}
+
+int red()
+{
+  return color_red;
+}
+
+int green()
+{
+  return color_green;
+}
+
+int blue()
+{
+  return color_blue;
+}
+
+
+};
+
+save_color save_color_obj;
+
+void random_color(){
+ 
+ uint8_t c_red = random(0,255);
+  uint8_t c_green = random(0,255);
+ uint8_t c_blue = random(0,255);
+
+ for(int i=0; i<NUMPIXELS; i++)
+ {
+pixels.setPixelColor(i, pixels.Color(c_red, c_green, c_blue));
+pixels.show();
+ }
+
+}
+
+bool onPowerState(const String &deviceId, bool &state) {
+  powerState = state;
+  if (state) {
+    pixels.clear();
+    for(int i=0; i<NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(save_color_obj.green(),save_color_obj.red(),save_color_obj.blue()));
+    }
+  } else {
+    pixels.clear();
+    pixels.setPixelColor(NUMPIXELS, pixels.Color(0,0,0));
+  }
+  pixels.show();
+  return true; // request handled properly
+}
+
+bool onColor(const String &deviceId, byte &r, byte &g, byte &b) {
+ pixels.clear();
+    for(int i=0; i<NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(r,g,b));
+    pixels.show();
+    }
+  return true;
+}
+
+
+void setupSinricPro() {
+  // get a new Light device from SinricPro
+  SinricProLight &myLight = SinricPro[LIGHT_ID];
+
+  // set callback function to device
+  myLight.onPowerState(onPowerState);
+  myLight.onColor(onColor);
+
+  
+  // setup SinricPro
+  SinricPro.onConnected([](){ Serial.printf("Connected to SinricPro\r\n"); }); 
+  SinricPro.onDisconnected([](){ Serial.printf("Disconnected from SinricPro\r\n"); });
+  //SinricPro.restoreDeviceStates(true); // Uncomment to restore the last known state from the server.
+  SinricPro.begin(APP_KEY, APP_SECRET);
+}
+
+void rainbow(int wait) {
+  pixels.clear();
+  for(long firstPixelHue = 0; firstPixelHue < 3*65536; firstPixelHue += 256) {
+    for(int i=0; i<pixels.numPixels(); i++) { 
+      int pixelHue = firstPixelHue + (i * 65536L / pixels.numPixels());
+      pixels.setPixelColor(i, pixels.gamma32(pixels.ColorHSV(pixelHue)));
+    }
+    pixels.show(); 
+    delay(wait);  
+  }
+}
+
+void off_led(){
+pixels.clear();
+pixels.setPixelColor(NUMPIXELS, pixels.Color(0,0,0));
+    pixels.show();
+}
+
+void change_color(uint8_t r,uint8_t g, uint8_t b){
+ for(int i=0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color( r, g, b ) );
+  }
+
+  pixels.show();
+}
+
+void on_led(){
+  uint8_t r = save_color_obj.red();
+    uint8_t g = save_color_obj.green();
+  uint8_t b = save_color_obj.blue();
+
+ for(int i=0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(r,g,b) );
+  }
+  pixels.show();
+}
+
+void FadeInOut(byte red, byte green, byte blue){
+  float r, g, b;
+     
+  for(int k = 0; k < 256; k=k+1) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    pixels.setPixelColor(k,pixels.Color(r,g,b));
+    pixels.show();
+  }
+     
+  for(int k = 255; k >= 0; k=k-2) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    pixels.setPixelColor(k,pixels.Color(r,g,b));
+    pixels.show();
+  }
+}
+
+
+const char index_html[] PROGMEM = R"rawliteral(
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  html, body{
+    margin: 0;
+    padding: 0;
+    background-color: blue;
+    height: 100%;
+  }
+  .background{
+    position: fixed;
+    top:0px;
+    right:0px;
+    bottom:0px;
+    margin: 40px;
+    left:0px;
+    height: 90%;
+    background-color: #171F30;
+    opacity: 1;
+    border-radius: 30px;
+    -webkit-box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
+-moz-box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
+box-shadow: 0px 0px 22px 4px rgba(23, 31, 48, 1);
+  }
+ 
+  .background img{
+    height: 40px;
+    width: 70px;
+    margin-top: 10px;
+    float: right;
+  }
+  .main{
+    width: 280px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 25px;
+  }
+  .main .color{
+    text-align: center;
+    font-size: large;
+    color: white;
+    margin-top: 10px;
+  }
+  .button {
+  border: 1px solid white;;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 20px;
+  cursor: pointer;
+}
+.button3, .button4{
+  border: 1px solid white;;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 20px;
+  cursor: pointer;
+  width: 230px;
+}
+.button:hover{
+  -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+-moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+}
+.button3:hover{
+  -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+-moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+}
+.button4:hover{
+  -webkit-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+-moz-box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+box-shadow: 0px 0px 12px 10px rgba(66, 68, 90, 1);
+}
+.button1, .button2, .button3, .button4 {
+  background-color: #171F30;
+  border-radius: 10px;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+<script src="https://requirejs.org/docs/release/2.3.5/minified/require.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+  
+  <div class="background">
+    <a href="https://github.com/arcziosppl"><img src="https://logos-world.net/wp-content/uploads/2020/11/GitHub-Logo.png"></a>
+  <div class="main">
+<div class="colorPicker">
+  </div>
+  <div class="color">
+    </div>
+    <div class="buttons">
+      <button class="button button1">ON</button>
+      <button class="button button2">OFF</button>
+      <button class="button3">RAINBOW</button>
+      <button class="button4">RANDOM</button>
+    </div>
+    </div>
+  </div>
+    <script>
+      var colorPicker = new iro.ColorPicker(".colorPicker", {
+        width: 280,
+        color: "rgb(255, 0, 0)",
+        borderWidth: 1,
+        borderColor: "#171F30",
+      });
+      
+      
+      colorPicker.on('color:change', function(color) {
+        if (color.index === 0) {
+          console.log('color 0 changed!');
+          document.body.style.backgroundColor =  color.rgbString;
+          document.querySelector(".color").innerHTML = "Color: " + color.rgbString;
+          console.log(color.rgbString);
+           const request = new XMLHttpRequest();              
+              request.open("GET", "/update?value=" + color.red + "&value2=" + color.green + "&value3=" + color.blue);
+              request.send(); 
+        }
+      
+      });
+      
+      var btn_on = document.querySelector(".button1");
+        var btn_off = document.querySelector(".button2");
+        var btn_rainbow = document.querySelector(".button3");
+        var btn_fade = document.querySelector(".button4");
+ 
+      btn_on.addEventListener('click', function(){
+              const request = new XMLHttpRequest();              
+              request.open("GET", "/on");
+              request.send();                               
+        });
+      
+        btn_off.addEventListener('click', function(){
+            const request = new XMLHttpRequest();              
+              request.open("GET", "/off");
+              request.send();
+        });
+        btn_rainbow.addEventListener('click', function(){
+            const request = new XMLHttpRequest();              
+              request.open("GET", "/rainbow");
+              request.send();
+        });
+        btn_fade.addEventListener('click', function(){
+            const request = new XMLHttpRequest();              
+              request.open("GET", "/random");
+              request.send();
+        });
+        $(document).ready(function(){
+            $(".button1, .button2, .button3, .button4").mouseenter(function(){
+                $(this).css({"borderColor" : "rgb(255, 0, 89)"});
+                $(this).animate({
+                    height: '60px'
+                });
+            });
+            $(".button1, .button2, .button3, .button4").mouseleave(function(){
+                $(this).animate({
+                    height: '50px'
+                });
+                $(this).css({"borderColor" : "white"});
+            });
+        });
+      
+      
+      </script>
+  </body>
+</html>
+)rawliteral";
+
+void notFound(AsyncWebServerRequest *request) {
+  request->send(404, "text/plain", "Not found");
+}
+
+void setup() {
+  Serial.begin(9600);
+  pixels.begin();
+  setupSinricPro();
+  off_led();
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Connecting...");
+    return;
+  }
+  Serial.println();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", index_html);
+  });
+
+  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    on_led();                                  
+    request->send(200);                                         
+  });
+
+  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    off_led(); 
+request->send(200);
+  });
+
+  server.on("/rainbow", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    rainbow(200); 
+request->send(200);
+  });
+
+  server.on("/random", HTTP_GET, [](AsyncWebServerRequest *request){ 
+    random_color();
+request->send(200);
+  });
+
+
+server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+ String inputMessage;
+  String inputMessage2;
+  String inputMessage3;
+    if(request->hasParam("value"))
+    {
+    inputMessage = request->getParam("value")->value();
+    inputMessage2 = request->getParam("value2")->value();
+    inputMessage3 = request->getParam("value3")->value();
+
+    change_color(inputMessage.toInt(),inputMessage2.toInt(),inputMessage3.toInt());
+    save_color_obj.s_color(inputMessage.toInt(),inputMessage2.toInt(),inputMessage3.toInt());
+    }
+  
+
+    request->send(200);
+  });
+
+
+  
+  server.onNotFound(notFound);
+  server.begin();
+}
+
+void loop() {
+  SinricPro.handle();
+}
