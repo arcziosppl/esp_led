@@ -32,8 +32,21 @@ class led_strip
      for(int i=0; i<NUMPIXELS; i++)
  {
 pixels.setPixelColor(i, pixels.Color(red, green, blue));
-pixels.show();
  }
+ pixels.show();
+  }
+
+  void set_strip_state(boolean state){ //turn off or on LED strip (true == turn on, false == turn off) 
+    if(state){
+      for(int i=0; i<NUMPIXELS; i++){
+        pixels.setPixelColor(i, pixels.Color(red, green, blue));
+      }
+      pixels.show();
+    }else{
+      pixels.clear();
+      pixels.setPixelColor(NUMPIXELS, pixels.Color(0, 0, 0));
+      pixels.show();
+    }
   }
 
 };
@@ -50,47 +63,98 @@ const char index_html[] PROGMEM = R"rawliteral(
   <title>LED</title>
   <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
   <style>
-body,html{
-  background-color: black;
-  width: 100ww;
-  height: 100wh;
+body{
+  background-color: #171F30;
 }
 
 .background{
-  height: 95%;
-  width: 95%;
-  background-color: #171F30;
+  height: 100vh;
+  width: 100vw;
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  border-radius: 20px;
+  top: 0;
+  left: 0;
+  /* From https://css.glass */
+background: rgba(20, 20, 20, 0.582);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(5px);
+display: flex;
+justify-content: center;
 }
 
-.background > .picker{
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
+.background > .main{
+  width: 300px;
+}
+
+.main > .picker{
+  padding-top: 20px;
+}
+.main > .controlls{
+  border-radius: 20px;
+  margin-top: 20px;
+  width: 300px;
+  height: 50%;
+  text-align: center;
+}
+
+.controlls > .state{
+  border: none;
+  background: none;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.controlls > .state > img{
+  width: 50px;
 }
   </style>
 </head>
 <body>
   <div class="background">
+    <div class="main">
     <div class="picker"></div>
+    <div class="controlls">
+      <button class="state"><img src="https://cdn-icons-png.flaticon.com/512/4023/4023190.png" alt="on off"></button>
+    </div>
+    </div>
   </div>
 
   <script>
+
+    const state_btn = document.querySelector('.state');
+    let state = false;
+
     const colorPicker = new iro.ColorPicker('.picker',{
-      width: 300
+      width: 300,
     });
 
     colorPicker.on('color:change', (color)=>{
-      let colors = [color.red,color.green,color.blue]
-      console.log(colors);
+      let colors = [color.red,color.green,color.blue];
+      document.body.style.backgroundColor =  color.rgbString;
       fetch("/color?"+ "value=" + colors[0] + "&value2=" + colors[1] + "&value3=" + colors[2],{
         method: "GET"
       })
     })
+
+    state_btn.addEventListener('click', ()=>{
+      if(state === true){
+        state = false;
+      }else{
+        state = true;
+      }
+
+      if(state === true){
+        fetch('/on',{
+          method: "GET"
+        })
+      }else{
+        fetch('/off',{
+          method: "GET"
+        })
+      }
+    });
+
+
+
   </script>
 </body>
 </html>
@@ -101,8 +165,10 @@ void notFound(AsyncWebServerRequest *request) {
 }
 
 void setup() {
+    EEPROM.begin(EEPROM_SIZE);
   Serial.begin(9600);
   pixels.begin();
+    LEDStrip.set_colors(EEPROM.read(0), EEPROM.read(1), EEPROM.read(2));
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -112,8 +178,6 @@ void setup() {
   Serial.println();
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
-
-  EEPROM.begin(EEPROM_SIZE);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html);
@@ -131,12 +195,23 @@ server.on("/color", HTTP_GET, [](AsyncWebServerRequest *request){
     color_blue = request->getParam("value3")->value();
 
     LEDStrip.set_colors(color_red.toInt(), color_green.toInt(), color_blue.toInt());
+    LEDStrip.set_strip_color();
     EEPROM.write(0, color_red.toInt());
     EEPROM.write(1, color_green.toInt());
     EEPROM.write(2, color_blue.toInt());
     EEPROM.commit();
     }
   
+    request->send(200);
+  });
+
+  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request){
+    LEDStrip.set_strip_state(true);
+    request->send(200);
+  });
+
+  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
+    LEDStrip.set_strip_state(false);
     request->send(200);
   });
 
@@ -147,5 +222,5 @@ server.on("/color", HTTP_GET, [](AsyncWebServerRequest *request){
 }
 
 void loop() {
- LEDStrip.set_strip_color();
+
 }

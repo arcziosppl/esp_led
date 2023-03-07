@@ -7,47 +7,98 @@
   <title>LED</title>
   <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
   <style>
-body,html{
-  background-color: black;
-  width: 100ww;
-  height: 100wh;
+body{
+  background-color: #171F30;
 }
 
 .background{
-  height: 95%;
-  width: 95%;
-  background-color: #171F30;
+  height: 100vh;
+  width: 100vw;
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  border-radius: 20px;
+  top: 0;
+  left: 0;
+  /* From https://css.glass */
+background: rgba(20, 20, 20, 0.582);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(5px);
+display: flex;
+justify-content: center;
 }
 
-.background > .picker{
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
+.background > .main{
+  width: 300px;
+}
+
+.main > .picker{
+  padding-top: 20px;
+}
+.main > .controlls{
+  border-radius: 20px;
+  margin-top: 20px;
+  width: 300px;
+  height: 50%;
+  text-align: center;
+}
+
+.controlls > .state{
+  border: none;
+  background: none;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.controlls > .state > img{
+  width: 50px;
 }
   </style>
 </head>
 <body>
   <div class="background">
+    <div class="main">
     <div class="picker"></div>
+    <div class="controlls">
+      <button class="state"><img src="https://cdn-icons-png.flaticon.com/512/4023/4023190.png" alt="on off"></button>
+    </div>
+    </div>
   </div>
 
   <script>
+
+    const state_btn = document.querySelector('.state');
+    let state = false;
+
     const colorPicker = new iro.ColorPicker('.picker',{
-      width: 300
+      width: 300,
     });
 
     colorPicker.on('color:change', (color)=>{
-      let colors = [color.red,color.green,color.blue]
-      console.log(colors);
+      let colors = [color.red,color.green,color.blue];
+      document.body.style.backgroundColor =  color.rgbString;
       fetch("/color?"+ "value=" + colors[0] + "&value2=" + colors[1] + "&value3=" + colors[2],{
         method: "GET"
       })
     })
+
+    state_btn.addEventListener('click', ()=>{
+      if(state === true){
+        state = false;
+      }else{
+        state = true;
+      }
+
+      if(state === true){
+        fetch('/on',{
+          method: "GET"
+        })
+      }else{
+        fetch('/off',{
+          method: "GET"
+        })
+      }
+    });
+
+
+
   </script>
 </body>
 </html>
