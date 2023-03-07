@@ -27,6 +27,15 @@ class led_strip
     green = g;
     blue = b;
   }
+
+  void set_strip_color(){
+     for(int i=0; i<NUMPIXELS; i++)
+ {
+pixels.setPixelColor(i, pixels.Color(red, green, blue));
+pixels.show();
+ }
+  }
+
 };
 
 led_strip LEDStrip;
@@ -138,5 +147,5 @@ server.on("/color", HTTP_GET, [](AsyncWebServerRequest *request){
 }
 
 void loop() {
- Serial.println(EEPROM.read(0));
+ LEDStrip.set_strip_color();
 }

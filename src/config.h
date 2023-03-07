@@ -10,4 +10,4 @@
 #define LIGHT_ID "******"
 
 /** size of EEPROm **/
-#define EEPROM_SIZE 512
+#define EEPROM_SIZE 12
