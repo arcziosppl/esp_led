@@ -18,8 +18,9 @@ AsyncWebServer server(80);
 
 class led_strip
 {
-  private:
+  public:
   uint8_t red,green,blue;
+  bool stript_state;
 
   public:
   void set_colors(uint8_t r, uint8_t g, uint8_t b){
@@ -36,7 +37,8 @@ pixels.setPixelColor(i, pixels.Color(red, green, blue));
  pixels.show();
   }
 
-  void set_strip_state(boolean state){ //turn off or on LED strip (true == turn on, false == turn off) 
+  void set_strip_state(bool state){
+    stript_state = state; //turn off or on LED strip (true == turn on, false == turn off) 
     if(state){
       for(int i=0; i<NUMPIXELS; i++){
         pixels.setPixelColor(i, pixels.Color(red, green, blue));
@@ -47,6 +49,7 @@ pixels.setPixelColor(i, pixels.Color(red, green, blue));
       pixels.setPixelColor(NUMPIXELS, pixels.Color(0, 0, 0));
       pixels.show();
     }
+    
   }
 
 };
@@ -65,20 +68,25 @@ const char index_html[] PROGMEM = R"rawliteral(
   <style>
 body{
   background-color: #171F30;
+  width: 100%;
+  height: 100%;
 }
 
 .background{
-  height: 100vh;
-  width: 100vw;
+  height: 95vh;
+  width: 95vw;
   position: absolute;
-  top: 0;
-  left: 0;
-  /* From https://css.glass */
-background: rgba(20, 20, 20, 0.582);
-backdrop-filter: blur(20px);
--webkit-backdrop-filter: blur(5px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(19, 18, 18, 0.404);
+box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+backdrop-filter: blur( 30px );
+-webkit-backdrop-filter: blur( 20px );
+border-radius: 10px;
 display: flex;
 justify-content: center;
+overflow: hidden;
 }
 
 .background > .main{
@@ -153,7 +161,17 @@ justify-content: center;
       }
     });
 
+      const req  = async ()=>{
+        let request = await fetch('/updateval');
+        let res = await request.text();
+        return res;
+      }
 
+      req().then((res)=>{
+        let strip_state = res.split(',');
+        console.log(strip_state)
+        colorPicker.color.rgb = { r: strip_state[1], g: strip_state[2], b: strip_state[3] };
+      })
 
   </script>
 </body>
@@ -213,6 +231,10 @@ server.on("/color", HTTP_GET, [](AsyncWebServerRequest *request){
   server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request){
     LEDStrip.set_strip_state(false);
     request->send(200);
+  });
+
+  server.on("/updateval", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", String(LEDStrip.stript_state) + "," + String(LEDStrip.red) + "," + String(LEDStrip.green) + "," + String(LEDStrip.blue));
   });
 
 

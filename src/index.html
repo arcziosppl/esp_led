@@ -9,20 +9,25 @@
   <style>
 body{
   background-color: #171F30;
+  width: 100%;
+  height: 100%;
 }
 
 .background{
-  height: 100vh;
-  width: 100vw;
+  height: 95vh;
+  width: 95vw;
   position: absolute;
-  top: 0;
-  left: 0;
-  /* From https://css.glass */
-background: rgba(20, 20, 20, 0.582);
-backdrop-filter: blur(20px);
--webkit-backdrop-filter: blur(5px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(19, 18, 18, 0.404);
+box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+backdrop-filter: blur( 30px );
+-webkit-backdrop-filter: blur( 20px );
+border-radius: 10px;
 display: flex;
 justify-content: center;
+overflow: hidden;
 }
 
 .background > .main{
@@ -96,6 +101,21 @@ justify-content: center;
         })
       }
     });
+
+    setInterval(()=>{
+
+      const req  = async ()=>{
+        let request = await fetch('/updateval');
+        let res = await request.text();
+        return res;
+      }
+
+      req().then((res)=>{
+        let strip_state = res.split(',');
+        console.log(strip_state)
+        colorPicker.color.rgb = { r: strip_state[1], g: strip_state[2], b: strip_state[3] };
+      })
+  },1000);
 
 
 
