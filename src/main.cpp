@@ -20,7 +20,7 @@ class led_strip
 {
   public:
   uint8_t red,green,blue;
-  bool stript_state;
+  bool stript_state = EEPROM.read(3);
 
   public:
   void set_colors(uint8_t r, uint8_t g, uint8_t b){
@@ -39,6 +39,9 @@ pixels.setPixelColor(i, pixels.Color(red, green, blue));
 
   void set_strip_state(bool state){
     stript_state = state; //turn off or on LED strip (true == turn on, false == turn off) 
+    EEPROM.write(3, state);
+    EEPROM.commit();
+    Serial.println(EEPROM.read(3));
     if(state){
       for(int i=0; i<NUMPIXELS; i++){
         pixels.setPixelColor(i, pixels.Color(red, green, blue));
@@ -129,7 +132,7 @@ overflow: hidden;
   <script>
 
     const state_btn = document.querySelector('.state');
-    let state = false;
+    let state;
 
     const colorPicker = new iro.ColorPicker('.picker',{
       width: 300,
@@ -146,15 +149,11 @@ overflow: hidden;
     state_btn.addEventListener('click', ()=>{
       if(state === true){
         state = false;
-      }else{
-        state = true;
-      }
-
-      if(state === true){
         fetch('/on',{
           method: "GET"
         })
       }else{
+        state = true;
         fetch('/off',{
           method: "GET"
         })
@@ -170,8 +169,11 @@ overflow: hidden;
       req().then((res)=>{
         let strip_state = res.split(',');
         console.log(strip_state)
+        state = strip_state[0];
         colorPicker.color.rgb = { r: strip_state[1], g: strip_state[2], b: strip_state[3] };
       })
+
+
 
   </script>
 </body>
@@ -187,6 +189,7 @@ void setup() {
   Serial.begin(9600);
   pixels.begin();
     LEDStrip.set_colors(EEPROM.read(0), EEPROM.read(1), EEPROM.read(2));
+    LEDStrip.set_strip_state(EEPROM.read(3));
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {

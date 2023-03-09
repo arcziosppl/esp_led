@@ -70,7 +70,7 @@ overflow: hidden;
   <script>
 
     const state_btn = document.querySelector('.state');
-    let state = false;
+    let state = true;
 
     const colorPicker = new iro.ColorPicker('.picker',{
       width: 300,
@@ -87,22 +87,16 @@ overflow: hidden;
     state_btn.addEventListener('click', ()=>{
       if(state === true){
         state = false;
-      }else{
-        state = true;
-      }
-
-      if(state === true){
         fetch('/on',{
           method: "GET"
         })
       }else{
+        state = true;
         fetch('/off',{
           method: "GET"
         })
       }
     });
-
-    setInterval(()=>{
 
       const req  = async ()=>{
         let request = await fetch('/updateval');
@@ -115,7 +109,6 @@ overflow: hidden;
         console.log(strip_state)
         colorPicker.color.rgb = { r: strip_state[1], g: strip_state[2], b: strip_state[3] };
       })
-  },1000);
 
 
 
