@@ -68,6 +68,7 @@ const char index_html[] PROGMEM = R"rawliteral(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LED</title>
   <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+  <link rel="shortcut icon" href="https://raw.githubusercontent.com/arcziosppl/esp_led/main/src/led-diode-16.ico" type="image/x-icon">
   <style>
 body{
   background-color: #171F30;
@@ -132,7 +133,7 @@ overflow: hidden;
   <script>
 
     const state_btn = document.querySelector('.state');
-    let state;
+    let state = true;
 
     const colorPicker = new iro.ColorPicker('.picker',{
       width: 300,
@@ -169,7 +170,6 @@ overflow: hidden;
       req().then((res)=>{
         let strip_state = res.split(',');
         console.log(strip_state)
-        state = strip_state[0];
         colorPicker.color.rgb = { r: strip_state[1], g: strip_state[2], b: strip_state[3] };
       })
 
